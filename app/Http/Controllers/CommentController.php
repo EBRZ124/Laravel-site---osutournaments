@@ -10,13 +10,9 @@ class CommentController extends Controller
 {
     public function __construct()
     {
-        // Only verified users can comment
         $this->middleware(['auth','verified']);
     }
 
-    /**
-     * Store a new comment for a given tournament.
-     */
     public function store(Request $request, Tournament $tournament)
     {
         $data = $request->validate([
