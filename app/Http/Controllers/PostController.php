@@ -9,7 +9,6 @@ class PostController extends Controller
 {
     public function __construct()
     {
-        // Verifeid only
         $this->middleware(['auth','verified'])->only(['create','store']);
     }
 
