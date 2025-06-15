@@ -21,7 +21,7 @@
     <p>
       To request Verified status, please send an email with your osu! username, a brief description of your involvement in the
       community, and why you’d like to become a Verified User to 
-      <a href="mailto:example@gmail.com">apply@OTH.com/a>.
+      <a href="mailto:example@gmail.com">apply@OTH.com</a>.
     </p>
     <p>
       We’ll review your application and get back to you within a few days. Thanks for helping make O!TH better!
