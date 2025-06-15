@@ -16,11 +16,11 @@ class AdminController extends Controller
 
         switch ($role) {
             case 'viewer':
-                return view('dashboard');       // dashboard.blade.php
+                return view('dashboard');
             case 'verified':
-                return view('admin.index');     // admin/index.blade.php
+                return view('admin.index');
             default:
-                abort(403);                     // forbidden
+                abort(403);
         }
     }
 
