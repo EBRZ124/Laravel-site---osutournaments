@@ -15,11 +15,20 @@ return new class extends Migration {
             $t->integer('player1_score')->nullable();
             $t->integer('player2_score')->nullable();
             $t->unsignedInteger('round')->default(0);
+        
+            $t->string('stage')->default('');
+        
             $t->timestamps();
-
-            $t->foreign('tournament_id')->references('id')->on('tournaments')->cascadeOnDelete();
-            $t->foreign('player1_id')->references('id')->on('players')->cascadeOnDelete();
-            $t->foreign('player2_id')->references('id')->on('players')->cascadeOnDelete();
+        
+            $t->foreign('tournament_id')
+              ->references('id')->on('tournaments')
+              ->cascadeOnDelete();
+            $t->foreign('player1_id')
+              ->references('id')->on('players')
+              ->cascadeOnDelete();
+            $t->foreign('player2_id')
+              ->references('id')->on('players')
+              ->cascadeOnDelete();
         });
     }
 
