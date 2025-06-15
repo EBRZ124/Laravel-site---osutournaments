@@ -1,64 +1,77 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use App\Models\Tournament;
 use App\Models\Player;
+use App\Models\Organiser;
+use App\Services\TranslationService;
 
 class TournamentController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth','verified'])
-             ->except(['index','show']);
+        $this->middleware(['auth','verified'])->except(['index','show']);
     }
 
-    // 1) List all tournaments
     public function index()
     {
         $tournaments = Tournament::with('players')
-                          ->orderBy('created_at','desc')
+                          ->orderByDesc('created_at')
                           ->paginate(10);
+
         return view('pages.archives', compact('tournaments'));
     }
 
-    // 2) Show form (you already have)
     public function create()
     {
-        return view('tournaments.create'); 
+        return view('tournaments.create');
     }
 
-    // 3) Persist new tournament
     public function store(Request $request)
     {
         $data = $request->validate([
+            'organiser.name'                => 'required|string|max:255',
+            'organiser.contact_information' => 'nullable|string|max:500',
+            'organiser.website_link'        => 'nullable|url',
+
             'title'            => 'required|string|max:255',
             'description'      => 'required|string',
             'prize_pool'       => 'nullable|numeric',
             'competition_type' => 'required|string|in:1v1,2v2,4v4',
             'tournament_type'  => 'required|string|max:100',
             'location'         => 'nullable|string|max:255',
-            'matchups'         => 'required|array',
+
+            'matchups'                    => 'required|array',
             'matchups.*.*.player1_name'  => 'required|string|max:255',
             'matchups.*.*.player2_name'  => 'required|string|max:255',
             'matchups.*.*.player1_score' => 'nullable|integer|min:0',
             'matchups.*.*.player2_score' => 'nullable|integer|min:0',
-            'sources'          => 'array',
-            'sources.*.stream_url' => 'nullable|url',
-            'sources.*.video_url'  => 'nullable|url',
-            'sources.*.forum_url'  => 'nullable|url',
+
+            'sources'                => 'array',
+            'sources.*.stream_url'   => 'nullable|url',
+            'sources.*.video_url'    => 'nullable|url',
+            'sources.*.forum_url'    => 'nullable|url',
         ]);
 
-        // a) Create tournament
-        $t = Tournament::create(
-            Arr::only($data, [
-                'title','description','prize_pool',
-                'competition_type','tournament_type','location'
-            ])
+        $organiserData = $data['organiser'];
+        $organiser = Organiser::firstOrCreate(
+            ['name' => $organiserData['name']],
+            Arr::only($organiserData, ['contact_information','website_link'])
         );
 
-        // b) Collect unique player names
+        $tournament = Tournament::create([
+            'organiser_id'     => $organiser->id,
+            'title'            => $data['title'],
+            'description'      => $data['description'],
+            'prize_pool'       => $data['prize_pool'] ?? null,
+            'competition_type' => $data['competition_type'],
+            'tournament_type'  => $data['tournament_type'],
+            'location'         => $data['location'] ?? null,
+        ]);
+
         $names = collect($data['matchups'])
             ->collapse()
             ->flatMap(fn($m) => [
@@ -66,23 +79,33 @@ class TournamentController extends Controller
             ])
             ->unique();
 
-        // c) Find or create players and gather IDs
-        $ids = $names->map(fn($name) => 
-            Player::firstOrCreate(['name'=>$name])->id
+        $playerIds = $names->map(fn($name) =>
+            Player::firstOrCreate(['name' => $name])->id
         )->all();
 
-        // d) Attach pivot
-        $t->players()->sync($ids);
+        $tournament->players()->sync($playerIds);
 
-        // e) Save each matchup
+        $initialCount = count($playerIds);
+        $stageNames = [
+            64 => 'Round of 64',
+            32 => 'Round of 32',
+            16 => 'Round of 16',
+             8 => 'Quarterfinals',
+             4 => 'Semifinals',
+             2 => 'Grand Final',
+        ];
+
         foreach ($data['matchups'] as $roundIndex => $matches) {
+            $playersThisRound = (int) max(2, $initialCount / (2 ** $roundIndex));
+            $stage = $stageNames[$playersThisRound] ?? "Round of {$playersThisRound}";
+
             foreach ($matches as $m) {
                 $p1 = Player::where('name', $m['player1_name'])->first()->id;
                 $p2 = Player::where('name', $m['player2_name'])->first()->id;
-        
-                $t->matchUps()->create([
-                    // ← THIS MUST BE PRESENT
+
+                $tournament->matchUps()->create([
                     'round'          => $roundIndex,
+                    'stage'          => $stage,
                     'player1_id'     => $p1,
                     'player2_id'     => $p2,
                     'player1_score'  => $m['player1_score'] ?? null,
@@ -91,31 +114,33 @@ class TournamentController extends Controller
             }
         }
 
-
-        // f) Save sources
-        foreach ($data['sources'] as $s) {
-            $t->sources()->create($s);
+        foreach ($data['sources'] ?? [] as $s) {
+            $tournament->sources()->create($s);
         }
 
         return redirect()
-            ->route('archives')
-            ->with('success','Tournament created!');
+               ->route('archives')
+               ->with('success', 'Tournament created!');
     }
 
-    // 4) Show a single tournament (you already have)
-    public function show(Tournament $tournament)
+
+    public function show(Tournament $tournament, Request $request, TranslationService $translator)
     {
         $tournament->load([
+            'organiser',
             'players',
             'matchUps.player1',
             'matchUps.player2',
             'sources',
             'comments.user',
         ]);
-    
-        return view('tournaments.show', compact('tournament'));
+
+        $language = $request->input('lang', 'en');
+
+        $translatedDescription = $language !== 'en'
+            ? $translator->translate($tournament->description, $language)
+            : $tournament->description;
+
+        return view('tournaments.show', compact('tournament', 'translatedDescription', 'language'));
     }
-    
 }
-
-
