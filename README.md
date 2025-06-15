@@ -13,3 +13,16 @@ What needs to be added:
 3. Make forum posts more visually appealing by changing text sizes and formatting them better (Fixed on 14.06. 6:00pm)
 4. Add a home page translation option with a Google API. (Done on 15.06. 5:00pm)
 4.1. Make adequate files translatable. (DOne on 15.06. at 11:00pm)
+
+
+**IF INSTALLING**
+
+Just installing wont give the site as the following folders are missing:
+node_modules
+vendor
+
+To get node_modeules:
+npm install
+
+To get vendor:
+composer install
