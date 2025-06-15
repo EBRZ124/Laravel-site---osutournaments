@@ -1,17 +1,35 @@
 @extends('layouts.app')
 
 @section('content')
-  <h2>Contact Me</h2>
+  <h2>Archived Tournaments</h2>
 
-  <section class="box post">
-    <p></p>
-    <p>
-        If you have questions, suggestions, or just want to say hello, feel free to drop me a line.</p>
-    <ul>
-      <li><strong>Email:</strong> <a href="mailto:example@gmail.com">evalds.berzins120@gmail.com</a></li>
-      <li><strong>Discord:</strong> b1rcchh</li>
-      <li><strong>GitHub:</strong> <a href="https://github.com/EBRZ124" target="_blank">github.com/EBRZ124</a></li>
-    </ul>
-  </section>
+  {{-- Success flash --}}
+  @if(session('success'))
+    <div class="alert success">{{ session('success') }}</div>
+  @endif
 
+  {{-- Tournament list --}}
+  @forelse($tournaments as $t)
+    <article class="box post post-excerpt">
+      <header>
+        <h3>
+          <a href="{{ route('tournaments.show', $t) }}">
+            {{ $t->title }}
+          </a>
+        </h3>
+        <span class="date">{{ $t->created_at->format('M j, Y') }}</span>
+      </header>
+      <p>{{ Str::limit($t->description, 150) }}</p>
+      <a href="{{ route('tournaments.show', $t) }}" class="button">
+        View Details
+      </a>
+    </article>
+  @empty
+    <p>No tournaments yet. Be the first to create one!</p>
+  @endforelse
+
+  {{-- Pagination --}}
+  <div class="pagination" style="margin-top: 2em;">
+    {{ $tournaments->links() }}
+  </div>
 @endsection
