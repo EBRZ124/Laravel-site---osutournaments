@@ -6,6 +6,8 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\HomeController;
 
 Route::get('/', [PageController::class, 'homepage'])->name('home');
 
@@ -14,7 +16,6 @@ Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact',[PageController::class, 'sendContact'])->name('contact.send');
 
 Route::get('/archives', [TournamentController::class, 'index'])->name('archives');
-
 
 Route::get('/archives/{tournament}', [TournamentController::class, 'show'])
      ->name('tournaments.show')
@@ -40,3 +41,11 @@ Route::middleware([
 Route::get('/home', function () {
     return redirect()->route('dashboard');
 });
+
+Route::get('lang/{locale}', [LanguageController::class,'swap'])
+     ->name('lang.swap')
+     ->where('locale','en|lv');
+
+    Route::get('/tournaments/{id}', [TournamentController::class, 'show']);
+    
+    Route::get('/', [HomeController::class, 'homepage'])->name('home');
